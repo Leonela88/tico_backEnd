@@ -19,6 +19,7 @@
   <img src="https://img.shields.io/badge/Spring_Boot-3.5-6DB33F?style=for-the-badge&logo=springboot&logoColor=white" />
   <img src="https://img.shields.io/badge/Spring_Security-JWT-6DB33F?style=for-the-badge&logo=springsecurity&logoColor=white" />
   <img src="https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white" />
+  <img src="https://img.shields.io/badge/Testcontainers-Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" />
   <img src="https://img.shields.io/badge/JavaMailSender-Email-EA4335?style=for-the-badge&logo=gmail&logoColor=white" />
 </p>
 
@@ -26,7 +27,7 @@
 
 ## 📖 Sobre el proyecto
 
-**TICO** (Tickets CoHispania) es una API REST para un sistema interno de gestión de tickets de soporte IT. Desarrollada como proyecto final de bootcamp, reemplaza Zendesk para el departamento de TI de CoHispania. Existen dos roles: **EMPLOYEE** (crea y realiza seguimiento de sus tickets) y **ADMIN** (gestiona, asigna, prioriza y cierra tickets).
+**TICO** (Tickets CoHispania) es una API REST para un sistema interno de gestión de tickets de soporte IT. Desarrollada como proyecto final de bootcamp, reemplaza y unifica herramienta externa de ticketing y gestión de incidencias a través de email de soporte para el departamento de TI de CoHispania. Existen dos roles: **EMPLOYEE** (crea y realiza seguimiento de sus tickets) y **ADMIN** (gestiona, asigna, prioriza y cierra tickets).
 
 Una funcionalidad clave es el **email threading**: cada ticket genera automáticamente un asunto de email fijo `[TICO-{id}] {título}` mediante `@PostPersist`, lo que garantiza que todas las respuestas y notificaciones aterricen en el mismo hilo de Gmail.
 
@@ -71,14 +72,15 @@ La API es consumida por un frontend React ([ver README Frontend](../tico_frontEn
 | Spring Security   | Autenticación y autorización                 |
 | Spring Data JPA   | ORM con Hibernate                            |
 | PostgreSQL        | Base de datos relacional (producción)        |
+| Testcontainers      | PostgreSQL + Mailpit en Docker para dev    |
 | H2                | Base de datos en memoria (tests)             |
 | Maven             | Gestión de dependencias y build              |
 | Lombok            | Reducción de boilerplate                     |
 | MapStruct 1.6     | Mapeo entidad ↔ DTO                          |
 | java-jwt 4.5      | Creación y validación de tokens JWT          |
 | JavaMailSender    | Envío de emails (activación, notificaciones) |
+| Mailpit             | Servidor de email local para desarrollo    |
 | springdoc-openapi | Documentación Swagger UI                     |
-| dotenv-java       | Variables de entorno desde `.env`            |
 | JUnit + Mockito   | Pruebas unitarias                            |
 
 ---
@@ -93,6 +95,7 @@ src/main/java/com/femcoders/tico/
 │
 ├── config/
 │   ├── CorsConfig.java                   → CORS (permite localhost:5173)
+│   ├── DevDataInitializer.java           → Seed data para desarrollo local (@Profile("dev"))
 │   └── OpenApiConfig.java                → Configuración Swagger
 │
 ├── controller/
@@ -195,6 +198,8 @@ src/main/java/com/femcoders/tico/
 ```
 src/test/java/com/femcoders/tico/
 │
+├── DevContainers.java  
+├── TestTicoApplicatio.java  
 ├── TicoApplicationTests.java              → Smoke test (el contexto de Spring arranca correctamente)
 │
 ├── controller/                            → Tests unitarios de controladores (MockMvc en modo slice)
@@ -259,48 +264,63 @@ src/test/java/com/femcoders/tico/
 
 - **Java 21** o superior
 - **Maven 3**
-- **PostgreSQL** corriendo en el puerto `5432`
-- Cuenta de email configurada para JavaMailSender (Gmail con contraseña de aplicación recomendado)
+- **Docker Desktop** — para Testcontainers (PostgreSQL + Mailpit en local)
 
 ### Pasos
 
 1. **Clonar el repositorio**
 
 ```bash
-git clone <url-del-repositorio>
+git clone <https://github.com/Leonela88/tico_backEnd>
 cd tico_backEnd
 ```
 
-2. **Crear la base de datos**
+2. **Configurar variables de entorno en VS Code**
 
-```sql
-CREATE DATABASE tico;
+Crea `.vscode/launch.json` en la raíz del proyecto (no se sube al repo):
+
+```json
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Dev (Testcontainers)",
+            "request": "launch",
+            "mainClass": "com.femcoders.tico.TestTicoApplication",
+            "projectName": "tico",
+            "env": {
+                "FRONTEND_URL": "http://localhost:5173",
+                "CORS_ALLOWED_ORIGINS": "http://localhost:5173",
+                "JWT_SECRET": "tu_secreto_aqui",
+                "JWT_EXPIRATION": "86400000"
+            },
+            "vmArgs": "-Dspring.profiles.active=dev"
+        }
+    ]
+}
 ```
 
-3. **Configurar las variables de entorno**
+3. **Arrancar Docker Desktop**
 
-```bash
-cp .env.example .env
+4. **Iniciar la aplicación desde VS Code**
+
+Selecciona la configuración **"Dev (Testcontainers)"** en Run & Debug (`Ctrl + Shift + D`).
+
+Testcontainers levanta automáticamente PostgreSQL y Mailpit. Al arrancar verás en consola:
+
+```
+>>> Dev data created:
+>>> ADMIN    → admin@tico.dev / admin123
+>>> ADMIN    → sara@tico.dev / admin123
+>>> EMPLOYEE → carlos@tico.dev / employee123
+>>> EMPLOYEE → ana@tico.dev / employee123
+>>> EMPLOYEE → pedro@tico.dev / employee123
 ```
 
-```env
-DB_URL=jdbc:postgresql://localhost:5432/tico
-DB_USERNAME=tu_usuario_postgres
-DB_PASSWORD=tu_contraseña_postgres
-JWT_SECRET=una_clave_aleatoria_de_al_menos_32_caracteres
-MAIL_USERNAME=tu_email@gmail.com
-MAIL_PASSWORD=tu_contraseña_de_aplicacion_gmail
-```
-
-4. **Iniciar la aplicación**
-
-```bash
-./mvnw spring-boot:run
-```
-
-Las tablas se crean automáticamente al iniciar mediante Hibernate (`ddl-auto=update`).
 La API estará disponible en `http://localhost:8080`.
 La documentación Swagger estará en `http://localhost:8080/swagger-ui.html`.
+Los emails se pueden ver en Mailpit — ver puerto en Docker Desktop.
 
 ### Ejecutar los tests
 
@@ -493,7 +513,18 @@ Los tests de integración (`*IT.java`) levantan el **contexto completo de Spring
 
 ---
 
-## 👥 Equipo
+## 🔧 Modificaciones post-bootcamp
+
+Este fork incluye mejoras técnicas implementadas de forma independiente tras finalizar el curso:
+
+- **Eliminación de dotenv-java** — migración a environment variables del sistema via `launch.json`
+- **Testcontainers** — PostgreSQL y Mailpit se levantan automáticamente con Docker, sin configuración manual ni dependencias externas
+- **DevDataInitializer** — seed data con usuarios, etiquetas y tickets realistas para desarrollo local
+- **Separación de entornos** — `application-dev.properties` completamente independiente de producción, sin variables de entorno en el código
+
+---
+
+## 👥 Equipo en repo original
 
 | Rol           | Nombre                  | GitHub                                                   | LinkedIn                                                         |
 | ------------- | ----------------------- | -------------------------------------------------------- | ---------------------------------------------------------------- |
