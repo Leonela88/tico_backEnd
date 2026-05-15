@@ -32,6 +32,7 @@ build/
 
 ### VS Code ###
 .vscode/
+.vscode/launch.json
 
 .env
 # Compiled class file
