@@ -4,17 +4,14 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 public record ActivationRequest(
-
-        @NotBlank
+        @NotBlank(message = "El email es obligatorio")
         String email,
-
-        @NotBlank @Size(min = 6, max = 6)
+        @NotBlank(message = "El código es obligatorio") 
+        @Size(min = 6, max = 6, message = "El código debe tener exactamente 6 caracteres")
         String code,
-
-        @NotBlank @Size(min = 8, message = "La contraseña debe tener al menos 8 caracteres")
+        @NotBlank(message = "La contraseña es obligatoria")
+        @Size(min = 8, message = "La contraseña debe tener al menos 8 caracteres")
         String password,
-
-        @NotBlank
+        @NotBlank(message = "La confirmación de contraseña es obligatoria")
         String confirmPassword) {
-
 }

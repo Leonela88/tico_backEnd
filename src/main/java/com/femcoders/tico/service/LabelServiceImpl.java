@@ -16,10 +16,12 @@ import com.femcoders.tico.dto.response.LabelResponse;
 import com.femcoders.tico.entity.Label;
 import com.femcoders.tico.enums.TicketStatus;
 import com.femcoders.tico.exception.BadRequestException;
+import com.femcoders.tico.exception.ConflictException;
 import com.femcoders.tico.exception.ResourceNotFoundException;
 import com.femcoders.tico.mapper.LabelMapper;
 import com.femcoders.tico.repository.LabelRepository;
 import com.femcoders.tico.repository.TicketRepository;
+
 
 @Service
 @RequiredArgsConstructor
@@ -34,7 +36,7 @@ public class LabelServiceImpl implements LabelService {
   public LabelResponse createLabel(LabelRequest dto) {
 
     if (labelRepository.existsByNameIgnoreCase(dto.name())) {
-      throw new IllegalStateException("La etiqueta '" + dto.name() + "' ya existe");
+      throw new ConflictException("La etiqueta '" + dto.name() + "' ya existe");
     }
     Label labelEntity = labelMapper.toEntity(dto);
 
